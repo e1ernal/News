@@ -11,7 +11,7 @@ final class ArticlesView: UIView {
     // MARK: - Public Properties
     
     // MARK: - Private Properties
-    private let tableView: UITableView = {
+    private let articlesTableView: UITableView = {
         let tableView = UITableView(frame: .zero, style: .plain)
         tableView.translatesAutoresizingMaskIntoConstraints = false
         tableView.separatorStyle = .none
@@ -19,12 +19,16 @@ final class ArticlesView: UIView {
         return tableView
     }()
     
+    private let categoriesView = CategoriesCollectionView()
+    
     // MARK: - Initialization
     override init(frame: CGRect) {
         super.init(frame: frame)
         
         // Configure View
-        addSubview(tableView)
+        addSubview(articlesTableView)
+        addSubview(categoriesView)
+//        backgroundColor = .systemBackground
     }
     
     @available(*, unavailable)
@@ -38,10 +42,15 @@ final class ArticlesView: UIView {
         
         // Configure constraints
         NSLayoutConstraint.activate([
-            tableView.topAnchor.constraint(equalTo: topAnchor),
-            tableView.bottomAnchor.constraint(equalTo: bottomAnchor),
-            tableView.leadingAnchor.constraint(equalTo: leadingAnchor),
-            tableView.trailingAnchor.constraint(equalTo: trailingAnchor)
+            categoriesView.topAnchor.constraint(equalTo: safeAreaLayoutGuide.topAnchor),
+            categoriesView.leadingAnchor.constraint(equalTo: leadingAnchor),
+            categoriesView.trailingAnchor.constraint(equalTo: trailingAnchor),
+            categoriesView.heightAnchor.constraint(equalToConstant: categoriesView.height + 15),
+            
+            articlesTableView.topAnchor.constraint(equalTo: categoriesView.bottomAnchor),
+            articlesTableView.bottomAnchor.constraint(equalTo: bottomAnchor),
+            articlesTableView.leadingAnchor.constraint(equalTo: leadingAnchor),
+            articlesTableView.trailingAnchor.constraint(equalTo: trailingAnchor)
         ])
     }
     
@@ -51,14 +60,14 @@ final class ArticlesView: UIView {
         dataSource: UITableViewDataSource,
         registerCell: [TableViewCell.Type]
     ) {
-        tableView.delegate = delegate
-        tableView.dataSource = dataSource
-        registerCell.forEach { tableView.register($0, forCellReuseIdentifier: $0.reuseIdentifier) }
+        articlesTableView.delegate = delegate
+        articlesTableView.dataSource = dataSource
+        registerCell.forEach { articlesTableView.register($0, forCellReuseIdentifier: $0.reuseIdentifier) }
     }
     
     func reload() {
-        tableView.reloadData()
-        if tableView.visibleCells.isEmpty {
+        articlesTableView.reloadData()
+        if articlesTableView.visibleCells.isEmpty {
             // Set view to empty tableView
             let backgroundLabel = UILabel()
             backgroundLabel.textAlignment = .center
@@ -107,26 +116,26 @@ final class ArticlesView: UIView {
             
             backgroundLabel.attributedText = backgroundText
             
-            tableView.backgroundView = backgroundLabel
+            articlesTableView.backgroundView = backgroundLabel
         } else {
-            tableView.backgroundView = nil
+            articlesTableView.backgroundView = nil
         }
-        tableView.tableFooterView = nil
+        articlesTableView.tableFooterView = nil
     }
     
     func reload(row: Int, in section: Int) {
-        let numberOfSections = tableView.numberOfSections
+        let numberOfSections = articlesTableView.numberOfSections
         guard 0...numberOfSections ~= section else { return }
-        let numberOfRows = tableView.numberOfRows(inSection: section)
+        let numberOfRows = articlesTableView.numberOfRows(inSection: section)
         guard 0...numberOfRows ~= row else { return }
         let indexPath = IndexPath(row: row, section: section)
         
         UIView.transition(
-            with: tableView,
+            with: articlesTableView,
             duration: 0.3,
             options: .curveEaseInOut,
             animations: {
-                self.tableView.reloadRows(at: [indexPath], with: .none)
+                self.articlesTableView.reloadRows(at: [indexPath], with: .none)
             }, completion: nil
         )
     }

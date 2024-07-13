@@ -39,7 +39,7 @@ extension ArticlesPresenter: ArticlesPresentationLogic {
             .map { _, article in
                 return Article(
                     source: article.source,
-                    author: article.author == nil ? nil : "By \(article.author ?? "")",
+                    author: article.author == nil || article.author == "" ? nil : "By \(article.author ?? "")",
                     title: article.title,
                     description: article.description,
                     url: article.url,

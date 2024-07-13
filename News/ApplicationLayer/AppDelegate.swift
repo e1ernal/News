@@ -19,11 +19,14 @@ final class AppDelegate: UIResponder, UIApplicationDelegate {
         configure(window)
         return true
     }
-
+    
     private func configure(_ window: UIWindow) {
         let viewController = LaunchViewController()
         let navigationController = UINavigationController()
         navigationController.viewControllers = [viewController]
+        
+        UINavigationBar.appearance().isTranslucent = false
+        
         self.window = window
         self.window?.rootViewController = navigationController
         self.window?.makeKeyAndVisible()
