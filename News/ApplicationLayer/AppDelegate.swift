@@ -21,11 +21,14 @@ final class AppDelegate: UIResponder, UIApplicationDelegate {
     }
     
     private func configure(_ window: UIWindow) {
-        let viewController = LaunchViewController()
+        let viewController = ArticlesViewController() /* Поменять потом на Launch Screen */
         let navigationController = UINavigationController()
         navigationController.viewControllers = [viewController]
         
-        UINavigationBar.appearance().isTranslucent = false
+        // Disable transparent Navigation Bar and fill it with background color
+        UINavigationBar.appearance().setBackgroundImage(UIImage(), for: .default)
+        UINavigationBar.appearance().shadowImage = UIImage()
+        UINavigationBar.appearance().backgroundColor = .clear
         
         self.window = window
         self.window?.rootViewController = navigationController

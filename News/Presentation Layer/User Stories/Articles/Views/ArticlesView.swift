@@ -28,7 +28,7 @@ final class ArticlesView: UIView {
         // Configure View
         addSubview(articlesTableView)
         addSubview(categoriesView)
-//        backgroundColor = .systemBackground
+        backgroundColor = .systemBackground
     }
     
     @available(*, unavailable)

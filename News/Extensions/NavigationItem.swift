@@ -17,7 +17,7 @@ public extension UINavigationItem {
         let subtitleLabel = UILabel()
         subtitleLabel.text = subtitle
         subtitleLabel.font = UIFont.systemFont(ofSize: 13, weight: .regular)
-        subtitleLabel.textColor = .label.withAlphaComponent(0.6)
+        subtitleLabel.textColor = .secondaryLabel
         
         let stackView = UIStackView(arrangedSubviews: [titleLabel, subtitleLabel])
         stackView.distribution = .equalCentering
