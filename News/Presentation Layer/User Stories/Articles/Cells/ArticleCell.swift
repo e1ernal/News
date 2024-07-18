@@ -165,7 +165,7 @@ final class ArticleCell: TableViewCell {
     }
     
     // MARK: - Public Methods
-    func configure(article: Article) {
+    func configure(article: Article?) {
         self.article = article
         
         configureStack()

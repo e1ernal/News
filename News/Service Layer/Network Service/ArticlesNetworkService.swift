@@ -7,8 +7,11 @@
 
 import UIKit
 
-final class ArticlesNetworkService: NetworkService {
+final class ArticlesNetworkService /*NetworkService*/ {
     // MARK: - Public Properties
+    public static var categories: [String] {
+        ["Top headlines", "Business", "Entertainment", "General", "Health", "Science", "Sports", "Technology"]
+    }
     
     // MARK: - Private Properties
     private static let decoder = JSONDecoder()
@@ -28,11 +31,12 @@ final class ArticlesNetworkService: NetworkService {
         } catch { return nil }
     }
     
-    static func getArticles(page: Int) async throws -> Articles {
+    static func getArticles(category: String, page: Int) async throws -> Articles {
         let urlString = "https:/"
             + "/newsapi.org/v2/"
             + "top-headlines?"
             + "country=us"
+            + "&category=\(category)"
             + "&pageSize=10"
             + "&page=\(page)"
             + "&apiKey=ae2e869be22d46ba9da27505e8f80e36"
@@ -62,5 +66,6 @@ final class ArticlesNetworkService: NetworkService {
             throw NetworkError.decoding
         }
     }
+    
     // MARK: - Private Methods
 }

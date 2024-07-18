@@ -36,10 +36,10 @@ public extension Date {
         return dateFormatter.string(from: self)
     }
     
-    static func current() -> String {
+    static func current(format: String = "E, MMM d") -> String {
         let date = Date()
         let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "E, MMM d"
+        dateFormatter.dateFormat = format
         return dateFormatter.string(from: date)
     }
 }

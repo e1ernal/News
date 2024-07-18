@@ -7,29 +7,24 @@
 
 import UIKit
 
-protocol ArticlesPresentationLogic {
-    func present(data: [Article])
+protocol ArticlesPresenterProtocol {
+    func prepare(data: [Article], category: String)
 }
 
-final class ArticlesPresenter {
+final class ArticlesPresenter: ArticlesPresenterProtocol {
     // MARK: - Public Properties
-    weak var viewController: ArticlesDisplayLogic?
     
     // MARK: - Private Properties
+    private weak var viewController: ArticlesViewControllerPresentProtocol?
     
     // MARK: - Initialization
+    init(viewController: ArticlesViewControllerPresentProtocol) {
+        self.viewController = viewController
+    }
     
     // MARK: - Public Methods
-    
-    // MARK: - Private Methods
-    
-    // MARK: - Deinitialization
-    deinit { print("Deinit \(String(describing: ArticlesPresenter.self))") }
-}
-
-// MARK: - Presentation Logic
-extension ArticlesPresenter: ArticlesPresentationLogic {
-    func present(data: [Article]) {
+    // ArticlesPresenterProtocol
+    func prepare(data: [Article], category: String) {
         let articles = data
             .filter {
                 $0.title != "[Removed]" &&
@@ -48,6 +43,10 @@ extension ArticlesPresenter: ArticlesPresentationLogic {
                     content: article.content
                 )
             }
-        viewController?.display(data: articles)
+        viewController?.present(data: articles, category: category)
     }
+    // MARK: - Private Methods
+    
+    // MARK: - Deinitialization
+    deinit { print("Deinit \(String(describing: ArticlesPresenter.self))") }
 }

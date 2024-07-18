@@ -7,29 +7,32 @@
 
 import UIKit
 
-protocol ArticlesDisplayLogic: AnyObject {
-    func display(data: [Article])
+protocol ArticlesViewControllerPresentProtocol: AnyObject {
+    func present(data: [Article], category: String)
 }
 
-final class ArticlesViewController: UIViewController {
+protocol ArticlesViewHandleEventsProtocol: AnyObject {
+    func fetch(category: String)
+    func fetchMore(category: String)
+}
+
+final class ArticlesViewController: UIViewController, ArticlesViewControllerPresentProtocol, ArticlesViewHandleEventsProtocol {
     // MARK: - Public Properties
     
     // MARK: - Private Properties
-    private var interactor: ArticlesBusinessLogic?
-    private var articlesView = ArticlesView()
-    private var data = [Article]() {
-        didSet {
-            DispatchQueue.main.async {
-                self.articlesView.reload()
-            }
-        }
+    private var data: [String: [Article]] = [:] {
+        didSet { articlesView?.updateData(data: data) }
     }
     
+    private var interactor: ArticlesInteractorProtocol?
+    private var articlesView: ArticlesViewProtocol?
+        
     // MARK: - Initialization
     init() {
         // Init optional properties
         super.init(nibName: nil, bundle: nil)
         configure()
+        
     }
     
     @available(*, unavailable)
@@ -40,8 +43,10 @@ final class ArticlesViewController: UIViewController {
     // MARK: - Lifecycle
     override func viewDidLoad() {
         super.viewDidLoad()
-        
-        interactor?.fetchArticles()
+
+        let categories = interactor?.categories
+        categories?.forEach { data[$0] = [] }
+        interactor?.fetch(category: "Health")
     }
     
     override func loadView() {
@@ -51,6 +56,24 @@ final class ArticlesViewController: UIViewController {
     // MARK: - Actions
     
     // MARK: - Public Methods
+    // ArticlesViewControllerHandleViewEvents
+    func fetch(category: String) {
+        interactor?.fetch(category: category)
+    }
+    
+    func fetchMore(category: String) {
+        interactor?.fetchMore(category: category)
+    }
+   
+    // ArticlesDisplayLogic Protocol
+    func present(data: [Article], category: String) {
+        guard let existedData = self.data[category] else {
+            self.data[category] = data
+            return
+        }
+        self.data[category] = existedData + data
+        print("Stopped")
+    }
     
     // MARK: - Private Methods
     private func configure() {
@@ -58,47 +81,13 @@ final class ArticlesViewController: UIViewController {
         navigationItem.setHidesBackButton(true, animated: true)
         
         let viewController = self
-        let presenter = ArticlesPresenter()
-        let interactor = ArticlesInteractor()
-        
-        interactor.presenter = presenter
-        presenter.viewController = viewController
+        let presenter = ArticlesPresenter(viewController: viewController)
+        let interactor = ArticlesInteractor(presenter: presenter)
         viewController.interactor = interactor
         
-        let cellTypes = [ArticleCell.self]
-        articlesView.configure(delegate: self, dataSource: self, registerCell: cellTypes)
+        articlesView = ArticlesView(delegate: viewController)
     }
     
     // MARK: - Deinitialization
     deinit { print("Deinit \(String(describing: ArticlesViewController.self))") }
-}
-
-// MARK: - View's Protocols implementation
-extension ArticlesViewController: UITableViewDataSource, UITableViewDelegate {
-    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int { data.count }
-    
-    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = tableView.dequeue(ArticleCell.self, for: indexPath)
-        let row = data[indexPath.row]
-        cell.configure(article: row)
-        return cell
-    }
-    
-    func tableView(_ tableView: UITableView, willDisplay cell: UITableViewCell, forRowAt indexPath: IndexPath) {
-        guard indexPath.row == data.count - 1 else { return }
-        guard let interactor, interactor.availableToFetch else { return }
-        
-        interactor.fetchArticles()
-        
-        let spinner = UIActivityIndicatorView(style: .medium)
-        spinner.startAnimating()
-        spinner.frame = CGRect(x: 0, y: 0, width: tableView.bounds.width, height: 50)
-        tableView.tableFooterView = spinner
-    }
-}
-
-extension ArticlesViewController: ArticlesDisplayLogic {
-    func display(data: [Article]) {
-        self.data.append(contentsOf: data)
-    }
 }

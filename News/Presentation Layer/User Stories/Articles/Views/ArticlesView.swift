@@ -7,33 +7,72 @@
 
 import UIKit
 
-final class ArticlesView: UIView {
+protocol ArticleViewEventsProtocol: AnyObject {
+    func didSelectItemAt(indexPath: IndexPath)
+    func willDisplayItemAt(indexPath: IndexPath, category: String)
+}
+
+protocol ArticlesViewProtocol: UIView {
+    func updateArticles(in category: String, with articles: [Article])
+    func updateData(data: [String: [Article]]?)
+}
+
+final class ArticlesView: UIView, ArticlesViewProtocol, ArticleViewEventsProtocol {
     // MARK: - Public Properties
     
     // MARK: - Private Properties
-    private let articlesTableView: UITableView = {
-        let tableView = UITableView(frame: .zero, style: .plain)
-        tableView.translatesAutoresizingMaskIntoConstraints = false
-        tableView.separatorStyle = .none
-        tableView.allowsSelection = false
-        return tableView
-    }()
+    private weak var controller: ArticlesViewHandleEventsProtocol?
+    private var categories: [String]? {
+        self.data?.map { $0.key }
+    }
+    
+    private var data: [String: [Article]]? {
+        didSet {
+            DispatchQueue.main.async {
+                if self.categoriesHandler?.source != self.categories ?? [] {
+                    self.categoriesHandler?.update(source: self.categories ?? [])
+                    self.categoriesView.reloadData()
+                }
+                
+                self.categoryArticlesHandler?.update(source: self.data ?? [:])
+                self.categoryArticlesView.reloadData()
+            }
+        }
+    }
     
     private let categoriesView = CategoriesCollectionView()
+    private var categoriesHandler: CategoriesHandler?
     
+    private let categoryArticlesView = CategoryArticlesCollectionView()
+    private var categoryArticlesHandler: CategoryArticlesHandler?
+
     // MARK: - Initialization
     override init(frame: CGRect) {
         super.init(frame: frame)
         
+        // Set delegates & data sources
+        categoriesHandler = CategoriesHandler(delegate: self)
+        categoriesView.dataSource = categoriesHandler
+        categoriesView.delegate = categoriesHandler
+
+        categoryArticlesHandler = CategoryArticlesHandler(delegate: self)
+        categoryArticlesView.dataSource = categoryArticlesHandler
+        categoryArticlesView.delegate = categoryArticlesHandler
+
         // Configure View
-        addSubview(articlesTableView)
         addSubview(categoriesView)
-        backgroundColor = .systemBackground
+        addSubview(categoryArticlesView)
+//        backgroundColor = .systemBackground
     }
     
     @available(*, unavailable)
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
+    }
+    
+    convenience init(delegate: ArticlesViewHandleEventsProtocol) {
+        self.init(frame: .zero)
+        self.controller = delegate
     }
     
     // MARK: - Lifecycle
@@ -47,98 +86,69 @@ final class ArticlesView: UIView {
             categoriesView.trailingAnchor.constraint(equalTo: trailingAnchor),
             categoriesView.heightAnchor.constraint(equalToConstant: categoriesView.height + 15),
             
-            articlesTableView.topAnchor.constraint(equalTo: categoriesView.bottomAnchor),
-            articlesTableView.bottomAnchor.constraint(equalTo: bottomAnchor),
-            articlesTableView.leadingAnchor.constraint(equalTo: leadingAnchor),
-            articlesTableView.trailingAnchor.constraint(equalTo: trailingAnchor)
+            categoryArticlesView.topAnchor.constraint(equalTo: categoriesView.bottomAnchor),
+            categoryArticlesView.bottomAnchor.constraint(equalTo: bottomAnchor),
+            categoryArticlesView.leadingAnchor.constraint(equalTo: leadingAnchor),
+            categoryArticlesView.trailingAnchor.constraint(equalTo: trailingAnchor)
         ])
     }
     
     // MARK: - Public Methods
-    func configure(
-        delegate: UITableViewDelegate,
-        dataSource: UITableViewDataSource,
-        registerCell: [TableViewCell.Type]
-    ) {
-        articlesTableView.delegate = delegate
-        articlesTableView.dataSource = dataSource
-        registerCell.forEach { articlesTableView.register($0, forCellReuseIdentifier: $0.reuseIdentifier) }
+    // ArticlesViewProtocol
+    func updateArticles(in category: String, with articles: [Article]) {
+        self.data?[category] = articles
     }
     
-    func reload() {
-        articlesTableView.reloadData()
-        if articlesTableView.visibleCells.isEmpty {
-            // Set view to empty tableView
-            let backgroundLabel = UILabel()
-            backgroundLabel.textAlignment = .center
-            backgroundLabel.numberOfLines = 0
-            
-            let imageAttachment = NSTextAttachment()
-            let image = UIImage(
-                systemName: "newspaper",
-                withConfiguration: UIImage.SymbolConfiguration(pointSize: 40, weight: .regular)
-            )?.withTintColor(.label)
-            
-            imageAttachment.image = image
-            let imageString = NSAttributedString(attachment: imageAttachment)
-            
-            let backgroundText = NSMutableAttributedString()
-            backgroundText.append(imageString)
-            
-            let titleText = "\nNo News"
-            let subtitleText = "\nTry to change the search parameters\nor come back later"
-            backgroundText.append(NSAttributedString(string: titleText + subtitleText))
-            
-            let titleFontAttribute = [NSAttributedString.Key.font: UIFont.systemFont(ofSize: 15, weight: .bold)]
-            let subtitleFontAttribute = [NSAttributedString.Key.font: UIFont.systemFont(ofSize: 13, weight: .regular)]
-            let mainColorAttribute = [NSAttributedString.Key.foregroundColor: UIColor.label]
-            let secondaryColorAttribute = [NSAttributedString.Key.foregroundColor: UIColor.secondaryLabel]
-            
-            backgroundText.addAttributes(
-                titleFontAttribute,
-                range: NSRange(location: 1, length: titleText.count)
-            )
-            
-            backgroundText.addAttributes(
-                subtitleFontAttribute,
-                range: NSRange(location: titleText.count + 1, length: subtitleText.count)
-            )
-            
-            backgroundText.addAttributes(
-                mainColorAttribute,
-                range: NSRange(location: 1, length: titleText.count)
-            )
-            
-            backgroundText.addAttributes(
-                secondaryColorAttribute,
-                range: NSRange(location: titleText.count + 1, length: subtitleText.count)
-            )
-            
-            backgroundLabel.attributedText = backgroundText
-            
-            articlesTableView.backgroundView = backgroundLabel
-        } else {
-            articlesTableView.backgroundView = nil
-        }
-        articlesTableView.tableFooterView = nil
+    func updateData(data: [String: [Article]]?) {
+        self.data = data
     }
     
-    func reload(row: Int, in section: Int) {
-        let numberOfSections = articlesTableView.numberOfSections
-        guard 0...numberOfSections ~= section else { return }
-        let numberOfRows = articlesTableView.numberOfRows(inSection: section)
-        guard 0...numberOfRows ~= row else { return }
-        let indexPath = IndexPath(row: row, section: section)
+    // ArticleViewEventsProtocol
+    func didSelectItemAt(indexPath: IndexPath) {
+        categoriesView.scrollToItem(at: indexPath, at: .centeredHorizontally, animated: true)
+        categoriesView.selectItem(at: indexPath, animated: true, scrollPosition: .centeredHorizontally)
+        categoryArticlesView.scrollToItem(at: indexPath, at: .centeredHorizontally, animated: true)
         
-        UIView.transition(
-            with: articlesTableView,
-            duration: 0.3,
-            options: .curveEaseInOut,
-            animations: {
-                self.articlesTableView.reloadRows(at: [indexPath], with: .none)
-            }, completion: nil
-        )
+        guard let data, let categories else { return }
+        if data[categories[indexPath.row]] != nil {
+            controller?.fetch(category: categories[indexPath.row])
+        }
     }
+    
+    func willDisplayItemAt(indexPath: IndexPath, category: String) {
+        controller?.fetchMore(category: category)
+    }
+    
+////    func configure(
+////        delegate: UITableViewDelegate,
+////        dataSource: UITableViewDataSource,
+////        registerCell: [TableViewCell.Type]
+////    ) {
+////        articlesByCategoryTableView.delegate = delegate
+////        articlesByCategoryTableView.dataSource = dataSource
+////        registerCell.forEach { articlesByCategoryTableView.register($0, forCellReuseIdentifier: $0.reuseIdentifier) }
+////    }
+//    
+//    func reload() {
+//        
+//    }
+//    
+//    func reload(row: Int, in section: Int) {
+////        let numberOfSections = articlesByCategoryTableView.numberOfSections
+////        guard 0...numberOfSections ~= section else { return }
+////        let numberOfRows = articlesByCategoryTableView.numberOfRows(inSection: section)
+////        guard 0...numberOfRows ~= row else { return }
+////        let indexPath = IndexPath(row: row, section: section)
+////        
+////        UIView.transition(
+////            with: articlesByCategoryTableView,
+////            duration: 0.3,
+////            options: .curveEaseInOut,
+////            animations: {
+////                self.articlesByCategoryTableView.reloadRows(at: [indexPath], with: .none)
+////            }, completion: nil
+////        )
+//    }
     
     // MARK: - Private Methods
     

@@ -7,7 +7,7 @@
 
 import Foundation
 
-protocol NetworkService {
-    static func getArticles(page: Int) async throws -> Articles
-}
+//protocol NetworkService {
+//    static func getArticles(page: Int) async throws -> Articles
+//}
 
